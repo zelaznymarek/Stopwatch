@@ -9,24 +9,32 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.SystemClock;
+import android.util.Log;
 
 public class MyService extends Service {
 
-    private final int STOP = 0;
-    private final int START = 1;
-    private final int RESET = 2;
     private boolean isRunning = false;
     private long startTime = 0;
     private long timeInMilliseconds = 0;
     private long timeSwapBuff = 0;
-    private long updatedTime;
-    private Handler handler = new Handler();
+    private long updatedTime = 0;
+    private final IBinder mBinder = new LocalBinder();
 
-    private final Messenger mMessenger = new Messenger(new IncomingHandler());
+    public MyService() { }
 
-    public MyService() {
+    public Runnable updateTimer = new Runnable() {
+        public void run() {
+            timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
+            updatedTime = timeSwapBuff + timeInMilliseconds;
+            Log.d("Czas:", String.valueOf(updatedTime));
 
-    }
+            Message timeMsg = new Message();
+            timeMsg.obj = updatedTime;
+            MainActivity.sHandler.sendMessage(timeMsg);
+
+            MainActivity.sHandler.postDelayed(this, 0);
+        }
+    };
 
     @Override
     public void onCreate(){
@@ -34,31 +42,21 @@ public class MyService extends Service {
 
     }
 
-
     @Override
     public IBinder onBind(Intent intent) {
-        return mMessenger.getBinder();
+        return mBinder;
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-    }
-
-    public long getUpdatedTime(){
-        return updatedTime;
-    }
 
     public void startStop(){
 
         if (isRunning) {
             timeSwapBuff += timeInMilliseconds;
-            handler.removeCallbacks(updateTimer);
+            MainActivity.sHandler.removeCallbacks(updateTimer);
             isRunning = false;
         } else {
             startTime = SystemClock.uptimeMillis();
-            handler.postDelayed(updateTimer, 0);
+            MainActivity.sHandler.postDelayed(updateTimer, 0);
             isRunning = true;
         }
     }
@@ -66,8 +64,8 @@ public class MyService extends Service {
 
     public void reset(){
 
+        startStop();
         isRunning=false;
-        handler.removeCallbacks(updateTimer);
         startTime = 0L;
         timeInMilliseconds = 0L;
         timeSwapBuff = 0L;
@@ -75,40 +73,11 @@ public class MyService extends Service {
 
     }
 
-
-
-
-    public Runnable updateTimer = new Runnable() {
-        public void run() {
-            timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
-            updatedTime = timeSwapBuff + timeInMilliseconds;
-            handler.postDelayed(this, 0);
-        }
-    };
-
-
-    class IncomingHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case STOP:
-                    isRunning = true;
-                    startStop();
-                    break;
-                case START:
-                    isRunning = false;
-                    startStop();
-                    break;
-                case RESET:
-                    reset();
-                    break;
-                default:
-                    super.handleMessage(msg);
-            }
-
+    public class LocalBinder extends Binder {
+        public MyService getService(){
+            return MyService.this;
         }
     }
-
 
 
 }
