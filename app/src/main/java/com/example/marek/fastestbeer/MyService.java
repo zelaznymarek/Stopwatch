@@ -19,6 +19,7 @@ public class MyService extends Service {
     private long timeSwapBuff = 0;
     private long updatedTime = 0;
     private final IBinder mBinder = new LocalBinder();
+    private Message timeMsg;
 
     public MyService() { }
 
@@ -28,7 +29,7 @@ public class MyService extends Service {
             updatedTime = timeSwapBuff + timeInMilliseconds;
             Log.d("Czas:", String.valueOf(updatedTime));
 
-            Message timeMsg = new Message();
+            timeMsg = new Message();
             timeMsg.obj = updatedTime;
             MainActivity.sHandler.sendMessage(timeMsg);
 
@@ -64,12 +65,16 @@ public class MyService extends Service {
 
     public void reset(){
 
-        startStop();
+        MainActivity.sHandler.removeCallbacks(updateTimer);
         isRunning=false;
         startTime = 0L;
         timeInMilliseconds = 0L;
         timeSwapBuff = 0L;
         updatedTime = 0L;
+
+        timeMsg = new Message();
+        timeMsg.obj = updatedTime;
+        MainActivity.sHandler.sendMessage(timeMsg);
 
     }
 
