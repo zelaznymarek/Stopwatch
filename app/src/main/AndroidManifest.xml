@@ -8,6 +8,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <service android:name=".MyService"/>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -16,10 +17,7 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name="com.example.marek.fastestbeer.MyService"
-            android:process=":my_process">
-        </service>
+
     </application>
 
 </manifest>
