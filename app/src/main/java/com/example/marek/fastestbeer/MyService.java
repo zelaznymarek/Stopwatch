@@ -3,15 +3,13 @@ package com.example.marek.fastestbeer;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.Messenger;
 import android.os.SystemClock;
 import android.util.Log;
 
 public class MyService extends Service {
+
 
     private boolean isRunning = false;
     private long startTime = 0;
@@ -33,7 +31,7 @@ public class MyService extends Service {
             timeMsg.obj = updatedTime;
             MainActivity.sHandler.sendMessage(timeMsg);
 
-            MainActivity.sHandler.postDelayed(this, 0);
+            MainActivity.sHandler.postDelayed(this, 10);
         }
     };
 
@@ -57,7 +55,8 @@ public class MyService extends Service {
             isRunning = false;
         } else {
             startTime = SystemClock.uptimeMillis();
-            MainActivity.sHandler.postDelayed(updateTimer, 0);
+            updateTimer.run();
+//            MainActivity.sHandler.postDelayed(updateTimer, 10);
             isRunning = true;
         }
     }

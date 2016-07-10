@@ -1,8 +1,10 @@
 package com.example.marek.fastestbeer;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Handler;
@@ -11,27 +13,36 @@ import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.support.design.widget.FloatingActionButton;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 
 public class MainActivity extends Activity {
 
+    public static final String REALM_NAME = "FastBeer";
     public static Handler sHandler;
-    private final int playPause = 0;
-    private final int reset = 1;
     private int secs = 0;
     private int mins = 0;
     private int millis = 0;
     private long currentTime = 0L;
     private boolean isBound = false;
+    private boolean isRuning = false;
     private MyService myService;
-    private Intent intent;
+    private Intent mIntent;
+    private Realm mRealm;
+    private AlertDialog.Builder mDialogBuilder;
     @BindView(R.id.timer)
     TextView time;
+    @BindView(R.id.fab_playPause)
+    FloatingActionButton fabPlayPause;
 
 
 
@@ -39,6 +50,11 @@ public class MainActivity extends Activity {
     public void playPause() {
 
         myService.startStop();
+        if(!isRuning){
+            fabPlayPause.setImageResource(R.drawable.ic_pause);
+        } else if(isRuning){
+            fabPlayPause.setImageResource(R.drawable.ic_start);
+        }
 
     }
 
@@ -50,18 +66,28 @@ public class MainActivity extends Activity {
         secs = 0;
         millis = 0;
         setTime();
+        fabPlayPause.setImageResource(R.drawable.ic_start);
 
     }
 
     @OnClick(R.id.fab_exit)
     public void exit() {
-        onDestroy();
+        myService.reset();
+        stopService(mIntent);
+        finishAffinity();
     }
 
     @OnClick(R.id.fab_save)
     public void save() {
 
+        saveTime();
 
+    }
+
+    @OnClick(R.id.fab_scores)
+    public void showScores() {
+        mIntent = new Intent(this, Scores.class);
+        startActivity(mIntent);
     }
 
 
@@ -71,7 +97,13 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        intent = new Intent(this, MyService.class);
+        mRealm = Realm.getInstance(new RealmConfiguration.Builder(this)
+                        .name(MainActivity.REALM_NAME)
+                        .build());
+
+        mIntent = new Intent(this, MyService.class);
+        startService(mIntent);
+        bindService(mIntent, myConnection, Context.BIND_AUTO_CREATE);
 
         MainActivity.sHandler = new Handler() {
 
@@ -93,19 +125,9 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-
-        bindService(intent, myConnection, Context.BIND_AUTO_CREATE);
-
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopService(intent);
-        finishAffinity();
-
+        mRealm.close();
     }
 
     private ServiceConnection myConnection = new ServiceConnection() {
@@ -126,6 +148,45 @@ public class MainActivity extends Activity {
     public void setTime() {
         time.setText("" + mins + ":" + String.format("%02d", secs) + ":"
                 + String.format("%03d", millis));
+    }
+
+    public void saveTime() {
+
+        mDialogBuilder = new AlertDialog.Builder(this);
+        final EditText editText = new EditText(this);
+
+        mDialogBuilder.setTitle("Drinker name");
+        mDialogBuilder.setMessage("Who was drinking?");
+        mDialogBuilder.setView(editText);
+        mDialogBuilder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which){
+
+                mRealm.beginTransaction();
+                Competitor competitor = mRealm.createObject(Competitor.class);
+
+                competitor.setmName(editText.getText().toString());
+                competitor.setmTime(currentTime);
+
+                mRealm.commitTransaction();
+                Toast.makeText(getApplicationContext(), "Saved!", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+
+        mDialogBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+
+        });
+
+        AlertDialog saveDialog = mDialogBuilder.create();
+        saveDialog.show();
+
     }
 
 }
