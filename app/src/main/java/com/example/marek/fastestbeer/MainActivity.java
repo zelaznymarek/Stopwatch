@@ -14,6 +14,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.design.widget.FloatingActionButton;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 
 public class MainActivity extends Activity {
 
@@ -52,8 +54,10 @@ public class MainActivity extends Activity {
         myService.startStop();
         if(!isRuning){
             fabPlayPause.setImageResource(R.drawable.ic_pause);
+            isRuning = true;
         } else if(isRuning){
             fabPlayPause.setImageResource(R.drawable.ic_start);
+            isRuning = false;
         }
 
     }
@@ -67,6 +71,7 @@ public class MainActivity extends Activity {
         millis = 0;
         setTime();
         fabPlayPause.setImageResource(R.drawable.ic_start);
+        isRuning=false;
 
     }
 
@@ -100,6 +105,8 @@ public class MainActivity extends Activity {
         mRealm = Realm.getInstance(new RealmConfiguration.Builder(this)
                         .name(MainActivity.REALM_NAME)
                         .build());
+
+        Global.lastId = getLastId();
 
         mIntent = new Intent(this, MyService.class);
         startService(mIntent);
@@ -166,6 +173,7 @@ public class MainActivity extends Activity {
                 mRealm.beginTransaction();
                 Competitor competitor = mRealm.createObject(Competitor.class);
 
+                competitor.setId(Global.lastId+1);
                 competitor.setmName(editText.getText().toString());
                 competitor.setmTime(currentTime);
 
@@ -187,6 +195,21 @@ public class MainActivity extends Activity {
         AlertDialog saveDialog = mDialogBuilder.create();
         saveDialog.show();
 
+    }
+
+    public int getLastId(){
+        mRealm.beginTransaction();
+        RealmResults<Competitor> results = mRealm.where(Competitor.class).findAllSorted("id");
+        mRealm.commitTransaction();
+
+        if(results.isEmpty()){
+
+            return 0;
+
+        } else {
+
+            return results.get(results.size() - 1).getId();
+        }
     }
 
 }

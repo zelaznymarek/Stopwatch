@@ -2,17 +2,16 @@ package com.example.marek.fastestbeer;
 
 
 import android.app.Activity;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
-import com.yqritc.recyclerviewflexibledivider.HorizontalDividerItemDecoration;
 
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 
 public class Scores extends Activity {
 
@@ -34,14 +33,15 @@ public class Scores extends Activity {
         mCompetitorList = getScores();
 
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        mRecyclerView.addItemDecoration(new HorizontalDividerItemDecoration.Builder(this).color(Color.BLACK).build());
 
         final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(linearLayoutManager);
 
+
         updateList();
 
     }
+
 
     public void updateList(){
 
@@ -52,7 +52,11 @@ public class Scores extends Activity {
 
     public List<Competitor> getScores(){
 
-        return mRealm.where(Competitor.class).findAllSorted("mTime");
+        mRealm.beginTransaction();
+        RealmResults<Competitor> results = mRealm.where(Competitor.class).findAllSorted("mTime");
+        mRealm.commitTransaction();
+
+        return results;
 
     }
 
